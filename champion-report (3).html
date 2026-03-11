@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Innovation Champion — 180° Report Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════
+   SCREEN UI  (hidden in print)
+═══════════════════════════════════════ */
+:root{
+  --navy:#0d0a2e;--navy2:#120e38;--navy3:#1a1448;
+  --purple:#7b2ff7;--purple2:#9b4dff;--pink:#d946ef;
+  --white:#fff;--off-white:#e8e4ff;
+  --muted:#9b8ec4;--border:rgba(123,47,247,0.25);
+  --text:#f0ecff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--navy);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh}
+
+/* ── LAUNCHER SCREEN ── */
+.launcher{
+  max-width:640px;margin:0 auto;padding:4rem 2rem;
+  display:flex;flex-direction:column;align-items:center;gap:1.5rem;
+  text-align:center;
+}
+.launcher-icon{
+  font-size:3.5rem;
+  filter:drop-shadow(0 0 20px rgba(123,47,247,0.8));
+  animation:glow 3s ease-in-out infinite;
+}
+@keyframes glow{
+  0%,100%{filter:drop-shadow(0 0 16px rgba(123,47,247,0.9))}
+  50%{filter:drop-shadow(0 0 30px rgba(217,70,239,1))}
+}
+.launcher-tag{
+  font-size:0.68rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;
+  color:#8b5cf6;background:rgba(123,47,247,0.15);
+  border:1px solid rgba(139,92,246,0.35);border-radius:99px;
+  padding:0.25rem 1rem;
+}
+.launcher h1{font-size:2rem;font-weight:900;color:var(--white);line-height:1.1}
+.launcher h1 span{background:linear-gradient(90deg,#a78bfa,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.launcher p{font-size:0.88rem;color:var(--muted);line-height:1.7;max-width:460px}
+
+.input-group{width:100%;display:flex;flex-direction:column;gap:0.4rem;text-align:left}
+.input-lbl{font-size:0.68rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)}
+.input-field{
+  width:100%;background:rgba(13,10,46,0.8);
+  border:1px solid rgba(123,47,247,0.35);border-radius:10px;
+  color:var(--text);font-family:'Nunito',sans-serif;
+  font-size:0.87rem;font-weight:600;padding:0.65rem 1rem;
+  outline:none;transition:border-color 0.18s,box-shadow 0.18s;
+}
+.input-field:focus{border-color:#9b4dff;box-shadow:0 0 0 3px rgba(123,47,247,0.2)}
+
+.gen-btn{
+  background:linear-gradient(135deg,var(--purple),var(--purple2));
+  color:var(--white);border:none;
+  font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:800;
+  padding:0.9rem 2.5rem;border-radius:12px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(123,47,247,0.45);
+  transition:transform 0.15s,box-shadow 0.15s,filter 0.15s;
+  display:flex;align-items:center;gap:0.6rem;width:100%;justify-content:center;
+}
+.gen-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(123,47,247,0.6);filter:brightness(1.1)}
+.gen-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+
+.how-box{
+  width:100%;background:rgba(123,47,247,0.08);
+  border:1px solid rgba(123,47,247,0.2);border-radius:12px;
+  padding:1.25rem 1.4rem;text-align:left;
+}
+.how-title{font-size:0.72rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:#8b5cf6;margin-bottom:0.75rem}
+.how-step{font-size:0.82rem;color:var(--muted);line-height:1.7;display:flex;gap:0.6rem;margin-bottom:0.4rem}
+.how-step span:first-child{
+  min-width:20px;height:20px;border-radius:50%;
+  background:rgba(123,47,247,0.25);color:#a78bfa;
+  font-size:0.7rem;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:2px;
+}
+
+.error-msg{
+  color:#f87171;font-size:0.82rem;font-weight:600;
+  background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);
+  border-radius:8px;padding:0.6rem 1rem;width:100%;display:none;
+}
+
+/* ═══════════════════════════════════════
+   REPORT  (visible in print too)
+═══════════════════════════════════════ */
+#reportOutput{display:none}
+
+.report-wrap{
+  max-width:860px;margin:0 auto;
+  padding:2.5rem 2rem 4rem;
+}
+
+/* action bar (screen only) */
+.action-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;flex-wrap:wrap;margin-bottom:2rem;
+}
+.back-btn{
+  background:transparent;border:1px solid rgba(123,47,247,0.35);
+  color:var(--muted);font-family:'Nunito',sans-serif;
+  font-size:0.82rem;font-weight:700;padding:0.5rem 1.2rem;
+  border-radius:8px;cursor:pointer;transition:all 0.15s;
+  display:flex;align-items:center;gap:0.4rem;
+}
+.back-btn:hover{border-color:#9b4dff;color:#a78bfa}
+.pdf-btn{
+  background:linear-gradient(135deg,var(--purple),var(--purple2));
+  color:var(--white);border:none;
+  font-family:'Nunito',sans-serif;font-size:0.85rem;font-weight:800;
+  padding:0.6rem 1.6rem;border-radius:10px;cursor:pointer;
+  box-shadow:0 4px 16px rgba(123,47,247,0.4);
+  display:flex;align-items:center;gap:0.5rem;
+  transition:filter 0.15s,transform 0.12s;
+}
+.pdf-btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+
+/* ── REPORT HEADER ── */
+.rpt-header{
+  background:linear-gradient(135deg,#1a0a4e 0%,#2a0f7a 60%,#1a0840 100%);
+  border:1px solid rgba(139,92,246,0.4);
+  border-radius:18px;padding:2rem 2.2rem;
+  margin-bottom:1.5rem;position:relative;overflow:hidden;
+}
+.rpt-header::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:280px;height:280px;
+  background:radial-gradient(circle,rgba(217,70,239,0.2) 0%,transparent 65%);
+}
+.rpt-header::after{
+  content:'180°';position:absolute;right:1.8rem;bottom:-0.5rem;
+  font-size:7rem;font-weight:900;color:rgba(255,255,255,0.04);
+  line-height:1;font-family:'Nunito',sans-serif;
+}
+.rpt-tag{
+  font-size:0.65rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;
+  color:#a78bfa;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.5rem;
+}
+.rpt-tag::before{content:'💡'}
+.rpt-name{font-size:2rem;font-weight:900;color:var(--white);line-height:1.1;margin-bottom:0.25rem}
+.rpt-name span{background:linear-gradient(90deg,#a78bfa,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.rpt-meta-row{display:flex;flex-wrap:wrap;gap:1.5rem;margin-top:1rem}
+.rpt-meta-item{display:flex;flex-direction:column;gap:0.1rem}
+.rpt-meta-lbl{font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(167,139,250,0.6)}
+.rpt-meta-val{font-size:0.85rem;font-weight:700;color:var(--off-white)}
+
+/* ── OVERALL SCORE CARD ── */
+.overall-score-card{
+  background:linear-gradient(135deg,var(--navy2),var(--navy3));
+  border:1px solid rgba(139,92,246,0.35);
+  border-radius:16px;padding:1.75rem;
+  margin-bottom:1.5rem;
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;
+  align-items:center;
+}
+@media(max-width:560px){.overall-score-card{grid-template-columns:1fr}}
+.score-big{text-align:center}
+.score-big-num{
+  font-size:4rem;font-weight:900;line-height:1;
+  background:linear-gradient(135deg,#a78bfa,#e879f9);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.score-big-label{font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-top:0.25rem}
+.score-stars-big{font-size:1.8rem;color:#f5c518;letter-spacing:0.05em;display:block;margin-top:0.2rem}
+
+.score-verdict{
+  background:rgba(123,47,247,0.12);
+  border:1px solid rgba(123,47,247,0.25);
+  border-radius:12px;padding:1rem 1.2rem;text-align:center;
+}
+.verdict-label{font-size:0.65rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:#8b5cf6;margin-bottom:0.4rem}
+.verdict-text{font-size:1rem;font-weight:800;color:var(--white);line-height:1.3}
+
+.score-dist{}
+.score-dist-title{font-size:0.65rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem}
+.score-bar-row{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.45rem}
+.score-bar-lbl{font-size:0.72rem;font-weight:700;color:var(--muted);min-width:70px}
+.score-bar-track{flex:1;height:6px;background:rgba(123,47,247,0.15);border-radius:99px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--purple),var(--pink));transition:width 1s ease}
+.score-bar-val{font-size:0.72rem;font-weight:800;color:#a78bfa;min-width:28px;text-align:right}
+
+/* ── RADAR CHART ── */
+.radar-card{
+  background:linear-gradient(160deg,var(--navy2),var(--navy3));
+  border:1px solid var(--border);border-radius:16px;
+  padding:1.75rem;margin-bottom:1.5rem;
+}
+.card-title{
+  font-size:0.68rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;
+  color:#8b5cf6;margin-bottom:1.25rem;
+  display:flex;align-items:center;gap:0.5rem;
+}
+.card-title::before{content:'';display:block;width:16px;height:2px;background:linear-gradient(90deg,var(--purple),var(--pink));border-radius:99px}
+.radar-container{position:relative;max-width:420px;margin:0 auto;height:340px}
+
+/* ── DIMENSION SCORES ── */
+.dims-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:1rem;
+  margin-bottom:1.5rem;
+}
+@media(max-width:560px){.dims-grid{grid-template-columns:1fr}}
+.dim-score-card{
+  background:linear-gradient(160deg,var(--navy2),var(--navy3));
+  border:1px solid var(--border);border-radius:14px;
+  padding:1.2rem 1.3rem;
+}
+.dim-sc-head{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.9rem}
+.dim-sc-icon{font-size:1.1rem}
+.dim-sc-name{font-size:0.85rem;font-weight:800;color:var(--white);flex:1}
+.dim-sc-stars{font-size:0.85rem;color:#f5c518}
+.dim-sc-avg{
+  font-size:2rem;font-weight:900;
+  background:linear-gradient(135deg,#a78bfa,#e879f9);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1;margin-bottom:0.6rem;
+}
+.dim-sc-avg small{font-size:0.8rem;color:var(--muted);font-weight:600}
+.dim-sc-bar-track{width:100%;height:5px;background:rgba(123,47,247,0.15);border-radius:99px;overflow:hidden}
+.dim-sc-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--purple),var(--pink))}
+
+/* ── COMPARISON TABLE ── */
+.comp-card{
+  background:linear-gradient(160deg,var(--navy2),var(--navy3));
+  border:1px solid var(--border);border-radius:16px;
+  padding:1.75rem;margin-bottom:1.5rem;overflow-x:auto;
+}
+.comp-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.comp-table th{
+  font-size:0.65rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--muted);padding:0.5rem 0.75rem;text-align:left;
+  border-bottom:1px solid rgba(123,47,247,0.2);
+}
+.comp-table td{
+  padding:0.6rem 0.75rem;color:var(--off-white);font-weight:600;
+  border-bottom:1px solid rgba(123,47,247,0.08);
+}
+.comp-table tr:last-child td{border-bottom:none}
+.comp-table .star-cell{color:#f5c518;letter-spacing:0.05em}
+.comp-table .score-cell{font-weight:800;color:#a78bfa}
+.comp-table .diff-pos{color:#34d399;font-weight:800}
+.comp-table .diff-neg{color:#f87171;font-weight:800}
+.comp-table .diff-neu{color:var(--muted);font-weight:700}
+
+/* ── RECOMMENDATION BANNER ── */
+.rec-banner{
+  background:linear-gradient(135deg,#1e0a5e,#2a0f7a,#1a0a4e);
+  border:1px solid rgba(139,92,246,0.5);
+  border-radius:16px;padding:1.5rem 1.75rem;
+  margin-bottom:1.5rem;
+  display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;
+}
+.rec-icon{font-size:2rem;flex-shrink:0}
+.rec-body{}
+.rec-label{font-size:0.65rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#a78bfa;margin-bottom:0.3rem}
+.rec-text{font-size:1rem;font-weight:800;color:var(--white);line-height:1.4}
+.rec-sub{font-size:0.8rem;color:var(--muted);margin-top:0.25rem;line-height:1.5}
+
+/* ── FOOTER ── */
+.rpt-footer{
+  text-align:center;margin-top:2.5rem;
+  font-size:0.72rem;color:var(--muted);letter-spacing:0.08em;
+}
+.rpt-footer strong{color:#8b5cf6}
+
+/* ═══════════════════════════════════════
+   PRINT STYLES
+═══════════════════════════════════════ */
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{background:#0d0a2e!important;color:#f0ecff!important}
+  .launcher,.action-bar{display:none!important}
+  #reportOutput{display:block!important}
+  .report-wrap{padding:1rem}
+  .rpt-header,.overall-score-card,.radar-card,.dims-grid,.comp-card,.rec-banner{
+    break-inside:avoid;page-break-inside:avoid;
+  }
+  .radar-container{height:300px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LAUNCHER ══ -->
+<div class="launcher" id="launcher">
+  <div class="launcher-icon">📊</div>
+  <div class="launcher-tag">Manafa Innovation Department</div>
+  <h1>Champion <span>Report Generator</span></h1>
+  <p>أدخل اسم الـ Champion بالضبط كما كتبه في النموذج. التقرير سيجيب ردوده تلقائياً ويولّد تقرير PDF احترافي مع مخطط رادار ومقارنة التقييمات.</p>
+
+  <div class="input-group">
+    <label class="input-lbl" for="inp_champion">اسم الـ Champion (بالضبط كما في النموذج)</label>
+    <input class="input-field" id="inp_champion" type="text" placeholder="مثال: Ahmed Al-Rashidi"/>
+  </div>
+
+  <div class="how-box">
+    <div class="how-title">ملاحظة</div>
+    <div class="how-step"><span>1</span><span>أدخل الاسم بالضبط كما كتبه الـ Champion في النموذج</span></div>
+    <div class="how-step"><span>2</span><span>النظام متصل بقاعدة البيانات تلقائياً — لا تحتاج أي إعداد إضافي</span></div>
+    <div class="how-step"><span>3</span><span>اضغط Generate Report وانتظر بضع ثوانٍ</span></div>
+  </div>
+
+  <div class="error-msg" id="errMsg"></div>
+
+  <button class="gen-btn" onclick="generateReport()" id="genBtn">
+    <span>Generate Report</span><span>→</span>
+  </button>
+</div>
+
+<!-- ══ REPORT OUTPUT ══ -->
+<div id="reportOutput">
+  <div class="report-wrap">
+
+    <!-- Action bar (screen only) -->
+    <div class="action-bar">
+      <button class="back-btn" onclick="goBack()">← Back</button>
+      <button class="pdf-btn" onclick="window.print()">⬇ Export as PDF</button>
+    </div>
+
+    <!-- Header -->
+    <div class="rpt-header">
+      <div class="rpt-tag">Innovation Champion Program — 180° Evaluation Report</div>
+      <div class="rpt-name">Champion: <span id="r_name">—</span></div>
+      <div class="rpt-meta-row">
+        <div class="rpt-meta-item"><div class="rpt-meta-lbl">Project</div><div class="rpt-meta-val" id="r_project">—</div></div>
+        <div class="rpt-meta-item"><div class="rpt-meta-lbl">Department</div><div class="rpt-meta-val" id="r_dept">—</div></div>
+        <div class="rpt-meta-item"><div class="rpt-meta-lbl">Cycle</div><div class="rpt-meta-val" id="r_cycle">—</div></div>
+        <div class="rpt-meta-item"><div class="rpt-meta-lbl">Evaluations Received</div><div class="rpt-meta-val" id="r_count">—</div></div>
+        <div class="rpt-meta-item"><div class="rpt-meta-lbl">Generated On</div><div class="rpt-meta-val" id="r_date">—</div></div>
+      </div>
+    </div>
+
+    <!-- Overall Score -->
+    <div class="overall-score-card">
+      <div class="score-big">
+        <div class="score-big-num" id="r_overall_num">—</div>
+        <span class="score-stars-big" id="r_overall_stars">—</span>
+        <div class="score-big-label">Overall Score</div>
+      </div>
+      <div class="score-verdict">
+        <div class="verdict-label">Performance Level</div>
+        <div class="verdict-text" id="r_verdict">—</div>
+      </div>
+      <div class="score-dist">
+        <div class="score-dist-title">Dimension Averages</div>
+        <div id="r_dist_bars">—</div>
+      </div>
+    </div>
+
+    <!-- Radar Chart -->
+    <div class="radar-card">
+      <div class="card-title">Performance Radar — All Dimensions</div>
+      <div class="radar-container">
+        <canvas id="radarChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Dimension Score Cards -->
+    <div class="card-title" style="margin-bottom:0.75rem">Dimension Breakdown</div>
+    <div class="dims-grid" id="r_dims_grid"></div>
+
+    <!-- Manager vs Innovation Dept Comparison -->
+    <div class="comp-card">
+      <div class="card-title">Evaluator Comparison — Manager vs Innovation Dept</div>
+      <table class="comp-table" id="r_comp_table">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th>Innovation Dept</th>
+            <th>Manager</th>
+            <th>Difference</th>
+          </tr>
+        </thead>
+        <tbody id="r_comp_body"></tbody>
+      </table>
+    </div>
+
+    <!-- Recommendation -->
+    <div class="rec-banner" id="r_rec_banner">
+      <div class="rec-icon" id="r_rec_icon">⭐</div>
+      <div class="rec-body">
+        <div class="rec-label">Recommendation for Next Cycle</div>
+        <div class="rec-text" id="r_rec_text">—</div>
+        <div class="rec-sub" id="r_rec_sub">—</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="rpt-footer">
+      <strong>Manafa Innovation Department</strong> · Innovation Champion Program · Confidential — For Internal Use Only
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── CONFIG ─────────────────────────────
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjxUpvCIpXhRssn4SUIo0dKit4mZ1AZM9rfdDZoeqyH_vzQk-z2kRyPWFbfB4MQW1d/exec';
+// ───────────────────────────────────────
+
+const DIM_CONFIG = [
+  { key:'ownership',  label:'Ownership',    icon:'🎯', fields:['d1_ownership_q1','d1_ownership_q2','d1_ownership_q3','d1_ownership_q4'] },
+  { key:'innovation', label:'Innovation',   icon:'💡', fields:['d2_innovation_q1','d2_innovation_q2','d2_innovation_q3'] },
+  { key:'collab',     label:'Collaboration',icon:'🤝', fields:['d3_collab_q1','d3_collab_q2','d3_collab_q3'] },
+  { key:'learning',   label:'Learning',     icon:'🌱', fields:['d4_learning_q1','d4_learning_q2','d4_learning_q3'] },
+  { key:'impact',     label:'Impact',       icon:'🏆', fields:['d5_impact_q1','d5_impact_q2','d5_impact_q3'] },
+];
+
+const VERDICTS = [
+  { min:4.5, text:'Outstanding Champion',      sub:'Exceptional performance across all dimensions. A role model for the program.', icon:'🏆' },
+  { min:3.5, text:'Exceeds Expectations',      sub:'Strong contribution and clear ownership. Well positioned for the next cycle.', icon:'⭐' },
+  { min:2.5, text:'Meets Expectations',        sub:'Solid performance with targeted areas for growth. On track with program goals.', icon:'✅' },
+  { min:1.5, text:'Below Expectations',        sub:'Requires focused development and closer support from the Innovation Department.', icon:'📈' },
+  { min:0,   text:'Needs Significant Support', sub:'Immediate intervention and structured development plan recommended.', icon:'⚠️' },
+];
+
+let radarChartInstance = null;
+
+function showError(msg){ const el=document.getElementById('errMsg'); el.textContent=msg; el.style.display='block'; }
+function hideError(){ document.getElementById('errMsg').style.display='none'; }
+
+function stars(n){ return '★'.repeat(Math.round(n))+'☆'.repeat(5-Math.round(n)); }
+
+function avg(arr){ const v=arr.filter(x=>x>0); return v.length? v.reduce((a,b)=>a+b,0)/v.length : 0; }
+
+function colToIndex(headers, colName){
+  return headers.findIndex(h => h && h.toString().toLowerCase().includes(colName.toLowerCase()));
+}
+
+// Map sheet column headers to field keys
+function buildFieldMap(headers){
+  const map = {};
+  const fieldDefs = {
+    timestamp:        'timestamp',
+    evaluator_role:   'evaluator role',
+    champion_name:    "champion's name",
+    evaluator_name:   'evaluator name',
+    department:       'department',
+    project_name:     'project name',
+    cycle:            'cycle',
+    project_stage:    'project stage',
+    d1_ownership_q1:  'd1 q1',
+    d1_ownership_q2:  'd1 q2',
+    d1_ownership_q3:  'd1 q3',
+    d1_ownership_q4:  'd1 q4',
+    d2_innovation_q1: 'd2 q1',
+    d2_innovation_q2: 'd2 q2',
+    d2_innovation_q3: 'd2 q3',
+    d3_collab_q1:     'd3 q1',
+    d3_collab_q2:     'd3 q2',
+    d3_collab_q3:     'd3 q3',
+    d4_learning_q1:   'd4 q1',
+    d4_learning_q2:   'd4 q2',
+    d4_learning_q3:   'd4 q3',
+    d5_impact_q1:     'd5 q1',
+    d5_impact_q2:     'd5 q2',
+    d5_impact_q3:     'd5 q3',
+    overall_rating:   'overall rating',
+    open_strengths:   'strengths',
+    open_improve:     'improvement',
+    open_recommend:   'recommend',
+  };
+  headers.forEach((h,i) => {
+    if(!h) return;
+    const hl = h.toLowerCase();
+    for(const [key,needle] of Object.entries(fieldDefs)){
+      if(hl.includes(needle)) map[key] = i;
+    }
+  });
+  return map;
+}
+
+async function generateReport(){
+  hideError();
+  const championName = document.getElementById('inp_champion').value.trim();
+  if(!championName){ showError('الرجاء إدخال اسم الـ Champion.'); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="opacity:0.7">جاري جلب البيانات…</span> <span style="animation:spin 1s linear infinite;display:inline-block">⟳</span>';
+  const styleTag = document.createElement('style');
+  styleTag.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+  document.head.appendChild(styleTag);
+
+  try {
+    const url = APPS_SCRIPT_URL + '?champion=' + encodeURIComponent(championName);
+    const resp = await fetch(url);
+    if(!resp.ok) throw new Error('تعذّر الاتصال بقاعدة البيانات.');
+    const json = await resp.json();
+    if(json.status === 'error') throw new Error(json.message || 'خطأ في الـ Apps Script');
+    if(!json.rows || json.rows.length === 0)
+      throw new Error('لم يتم العثور على ردود لـ "' + championName + '". تأكد من الاسم بالضبط كما في النموذج.');
+
+    const rows = json.rows;
+    const headers = Object.keys(rows[0]);
+    const fieldMap = buildFieldMap(headers);
+    const rowArrays = rows.map(r => headers.map(h => r[h] || ''));
+    buildReport(championName, rowArrays, fieldMap, headers);
+
+  } catch(err){
+    showError('⚠ ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<span>Generate Report</span><span>→</span>';
+  }
+}
+
+
+function parseCSV(text){
+  const rows=[];
+  const lines=text.split('\n');
+  for(const line of lines){
+    const row=[];let cur='';let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else{inQ=!inQ;}}
+      else if(c===','&&!inQ){row.push(cur.trim());cur='';}
+      else cur+=c;
+    }
+    row.push(cur.trim());
+    if(row.some(c=>c!='')) rows.push(row);
+  }
+  return rows;
+}
+
+function getField(row, fieldMap, key){
+  const idx = fieldMap[key];
+  return idx !== undefined ? (row[idx]||'') : '';
+}
+
+function getNum(row, fieldMap, key){
+  const v = parseFloat(getField(row, fieldMap, key));
+  return isNaN(v) ? 0 : v;
+}
+
+function buildReport(name, rows, fieldMap, headers){
+  // Meta from first row
+  const first = rows[0];
+  document.getElementById('r_name').textContent    = name;
+  document.getElementById('r_project').textContent = getField(first, fieldMap,'project_name') || '—';
+  document.getElementById('r_dept').textContent    = getField(first, fieldMap,'department')    || '—';
+  document.getElementById('r_cycle').textContent   = getField(first, fieldMap,'cycle')         || '—';
+  document.getElementById('r_count').textContent   = rows.length + ' response' + (rows.length>1?'s':'');
+  document.getElementById('r_date').textContent    = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+
+  // Split by evaluator role
+  const deptRows = rows.filter(r => {
+    const role = getField(r,fieldMap,'evaluator_role').toLowerCase();
+    return role.includes('innovation') || role.includes('partner') || role.includes('department');
+  });
+  const mgrRows = rows.filter(r => {
+    const role = getField(r,fieldMap,'evaluator_role').toLowerCase();
+    return role.includes('manager');
+  });
+  const allRows = rows;
+
+  // Compute dimension averages
+  const dimAvgs = DIM_CONFIG.map(dim => {
+    const vals = allRows.flatMap(row => dim.fields.map(f => getNum(row,fieldMap,f))).filter(v=>v>0);
+    return avg(vals);
+  });
+
+  const deptDimAvgs = DIM_CONFIG.map(dim => {
+    const vals = deptRows.flatMap(row => dim.fields.map(f => getNum(row,fieldMap,f))).filter(v=>v>0);
+    return avg(vals);
+  });
+  const mgrDimAvgs = DIM_CONFIG.map(dim => {
+    const vals = mgrRows.flatMap(row => dim.fields.map(f => getNum(row,fieldMap,f))).filter(v=>v>0);
+    return avg(vals);
+  });
+
+  // Overall score
+  const overallNums = allRows.map(r => getNum(r,fieldMap,'overall_rating')).filter(v=>v>0);
+  const dimOverall  = avg(dimAvgs.filter(v=>v>0));
+  const overallScore = overallNums.length ? avg([avg(overallNums), dimOverall]) : dimOverall;
+  const overallRound = Math.round(overallScore*10)/10;
+
+  // ── Overall card
+  document.getElementById('r_overall_num').textContent = overallRound.toFixed(1);
+  document.getElementById('r_overall_stars').textContent = stars(overallScore);
+  const verdict = VERDICTS.find(v => overallScore >= v.min);
+  document.getElementById('r_verdict').textContent = verdict.text;
+  document.getElementById('r_rec_icon').textContent = verdict.icon;
+  document.getElementById('r_rec_text').textContent = verdict.text;
+  document.getElementById('r_rec_sub').textContent  = verdict.sub;
+
+  // Distribution bars
+  const distHtml = DIM_CONFIG.map((dim,i) => {
+    const v = dimAvgs[i];
+    return `<div class="score-bar-row">
+      <span class="score-bar-lbl">${dim.icon} ${dim.label}</span>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${(v/5)*100}%"></div></div>
+      <span class="score-bar-val">${v>0?v.toFixed(1):'—'}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('r_dist_bars').innerHTML = distHtml;
+
+  // ── Radar chart
+  if(radarChartInstance) radarChartInstance.destroy();
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  const datasets = [
+    { label:'Overall', data:dimAvgs.map(v=>v||0), borderColor:'rgba(167,139,250,0.9)', backgroundColor:'rgba(167,139,250,0.15)', borderWidth:2, pointBackgroundColor:'#a78bfa', pointRadius:4 }
+  ];
+  if(deptRows.length) datasets.push({
+    label:'Innovation Dept', data:deptDimAvgs.map(v=>v||0), borderColor:'rgba(217,70,239,0.85)', backgroundColor:'rgba(217,70,239,0.1)', borderWidth:2, pointBackgroundColor:'#e879f9', pointRadius:4
+  });
+  if(mgrRows.length) datasets.push({
+    label:'Manager', data:mgrDimAvgs.map(v=>v||0), borderColor:'rgba(52,211,153,0.85)', backgroundColor:'rgba(52,211,153,0.08)', borderWidth:2, pointBackgroundColor:'#34d399', pointRadius:4
+  });
+
+  radarChartInstance = new Chart(ctx, {
+    type:'radar',
+    data:{ labels: DIM_CONFIG.map(d => d.icon+' '+d.label), datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      scales:{r:{
+        min:0, max:5,
+        ticks:{ stepSize:1, color:'rgba(155,142,196,0.6)', backdropColor:'transparent', font:{size:10} },
+        grid:{ color:'rgba(123,47,247,0.2)' },
+        angleLines:{ color:'rgba(123,47,247,0.2)' },
+        pointLabels:{ color:'#c4b5fd', font:{size:11,weight:'700'} },
+      }},
+      plugins:{
+        legend:{ labels:{ color:'#c4b5fd', font:{size:11}, padding:16 } }
+      }
+    }
+  });
+
+  // ── Dimension cards
+  const dimsHtml = DIM_CONFIG.map((dim,i) => {
+    const v = dimAvgs[i];
+    return `<div class="dim-score-card">
+      <div class="dim-sc-head">
+        <span class="dim-sc-icon">${dim.icon}</span>
+        <span class="dim-sc-name">${dim.label}</span>
+        <span class="dim-sc-stars">${stars(v)}</span>
+      </div>
+      <div class="dim-sc-avg">${v>0?v.toFixed(1):'—'}<small> / 5</small></div>
+      <div class="dim-sc-bar-track"><div class="dim-sc-bar-fill" style="width:${(v/5)*100}%"></div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('r_dims_grid').innerHTML = dimsHtml;
+
+  // ── Comparison table
+  const compHtml = DIM_CONFIG.map((dim,i) => {
+    const d = deptDimAvgs[i], m = mgrDimAvgs[i];
+    const dStr = d>0 ? d.toFixed(1) : '—';
+    const mStr = m>0 ? m.toFixed(1) : '—';
+    let diffHtml = '<span class="diff-neu">—</span>';
+    if(d>0 && m>0){
+      const diff = d - m;
+      const cls  = diff>0.3?'diff-pos':diff<-0.3?'diff-neg':'diff-neu';
+      diffHtml = `<span class="${cls}">${diff>0?'+':''}${diff.toFixed(1)}</span>`;
+    }
+    return `<tr>
+      <td>${dim.icon} ${dim.label}</td>
+      <td class="score-cell">${dStr} <span class="star-cell">${d>0?stars(d):''}</span></td>
+      <td class="score-cell">${mStr} <span class="star-cell">${m>0?stars(m):''}</span></td>
+      <td>${diffHtml}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('r_comp_body').innerHTML = compHtml ||
+    '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:1rem">Not enough evaluator data to compare.</td></tr>';
+
+  // Show report
+  document.getElementById('launcher').style.display = 'none';
+  document.getElementById('reportOutput').style.display = 'block';
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+function goBack(){
+  document.getElementById('launcher').style.display = 'flex';
+  document.getElementById('reportOutput').style.display = 'none';
+  const btn = document.getElementById('genBtn');
+  btn.disabled = false;
+  btn.innerHTML = '<span>Generate Report</span><span>→</span>';
+}
+</script>
+</body>
+</html>
