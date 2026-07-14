@@ -402,23 +402,23 @@ body{background:var(--navy);color:var(--text);font-family:'Nunito',sans-serif;mi
 
 <script>
 // ── CONFIG ─────────────────────────────
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzjxUpvCIpXhRssn4SUIo0dKit4mZ1AZM9rfdDZoeqyH_vzQk-z2kRyPWFbfB4MQW1d/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzE1rHXNJQRFr-oFGclvOZplbEyuBj8bwISd8pwgYmyFBG0yrQzeDbQXhPjw-EippdW/exec';
 // ───────────────────────────────────────
 
 const DIM_CONFIG = [
-  { key:'ownership',  label:'Ownership',    icon:'🎯', fields:['d1_ownership_q1','d1_ownership_q2','d1_ownership_q3','d1_ownership_q4'] },
-  { key:'innovation', label:'Innovation',   icon:'💡', fields:['d2_innovation_q1','d2_innovation_q2','d2_innovation_q3'] },
-  { key:'collab',     label:'Collaboration',icon:'🤝', fields:['d3_collab_q1','d3_collab_q2','d3_collab_q3'] },
-  { key:'learning',   label:'Learning',     icon:'🌱', fields:['d4_learning_q1','d4_learning_q2','d4_learning_q3'] },
-  { key:'impact',     label:'Impact',       icon:'🏆', fields:['d5_impact_q1','d5_impact_q2','d5_impact_q3'] },
+  { key:'delivery',   label:'Delivery & Results',      icon:'🎯', fields:['d1q1','d1q2','d1q3'] },
+  { key:'comms',      label:'Communication & Clarity', icon:'💬', fields:['d2q1','d2q2','d2q3'] },
+  { key:'collab',     label:'Collaboration & Teamwork',icon:'🤝', fields:['d3q1','d3q2','d3q3'] },
+  { key:'growth',     label:'Growth & Initiative',     icon:'🌱', fields:['d4q1','d4q2','d4q3'] },
+  { key:'impact',     label:'Impact & Influence',      icon:'🏆', fields:['d5q1','d5q2','d5q3'] },
 ];
 
 const VERDICTS = [
-  { min:4.5, text:'Outstanding Champion',      sub:'Exceptional performance across all dimensions. A role model for the program.', icon:'🏆' },
-  { min:3.5, text:'Exceeds Expectations',      sub:'Strong contribution and clear ownership. Well positioned for the next cycle.', icon:'⭐' },
-  { min:2.5, text:'Meets Expectations',        sub:'Solid performance with targeted areas for growth. On track with program goals.', icon:'✅' },
-  { min:1.5, text:'Below Expectations',        sub:'Requires focused development and closer support from the Innovation Department.', icon:'📈' },
-  { min:0,   text:'Needs Significant Support', sub:'Immediate intervention and structured development plan recommended.', icon:'⚠️' },
+  { min:4.5, text:'Outstanding',          sub:'Exceptional performance across all dimensions. A true role model for the team.', icon:'🏆' },
+  { min:3.5, text:'Exceeds Expectations', sub:'Strong contribution and clear ownership. Well positioned for continued growth.', icon:'⭐' },
+  { min:2.5, text:'Meets Expectations',   sub:'Solid performance with targeted areas for development.', icon:'✅' },
+  { min:1.5, text:'Below Expectations',   sub:'Requires focused development and closer support from management.', icon:'📈' },
+  { min:0,   text:'Needs Support',        sub:'Immediate intervention and a structured development plan is recommended.', icon:'⚠️' },
 ];
 
 let radarChartInstance = null;
@@ -438,34 +438,22 @@ function colToIndex(headers, colName){
 function buildFieldMap(headers){
   const map = {};
   const fieldDefs = {
-    timestamp:        'timestamp',
-    evaluator_role:   'evaluator role',
-    champion_name:    "champion's name",
-    evaluator_name:   'evaluator name',
-    department:       'department',
-    project_name:     'project name',
-    cycle:            'cycle',
-    project_stage:    'project stage',
-    d1_ownership_q1:  'd1 q1',
-    d1_ownership_q2:  'd1 q2',
-    d1_ownership_q3:  'd1 q3',
-    d1_ownership_q4:  'd1 q4',
-    d2_innovation_q1: 'd2 q1',
-    d2_innovation_q2: 'd2 q2',
-    d2_innovation_q3: 'd2 q3',
-    d3_collab_q1:     'd3 q1',
-    d3_collab_q2:     'd3 q2',
-    d3_collab_q3:     'd3 q3',
-    d4_learning_q1:   'd4 q1',
-    d4_learning_q2:   'd4 q2',
-    d4_learning_q3:   'd4 q3',
-    d5_impact_q1:     'd5 q1',
-    d5_impact_q2:     'd5 q2',
-    d5_impact_q3:     'd5 q3',
-    overall_rating:   'overall rating',
-    open_strengths:   'strengths',
-    open_improve:     'improvement',
-    open_recommend:   'recommend',
+    timestamp:       'timestamp',
+    evaluator_role:  'evaluator role',
+    champion_name:   'champion name',
+    evaluator_name:  'evaluator name',
+    department:      'department',
+    review_period:   'review period',
+    known_duration:  'known duration',
+    d1q1: 'd1 q1', d1q2: 'd1 q2', d1q3: 'd1 q3', d1_open: 'd1 open',
+    d2q1: 'd2 q1', d2q2: 'd2 q2', d2q3: 'd2 q3', d2_open: 'd2 open',
+    d3q1: 'd3 q1', d3q2: 'd3 q2', d3q3: 'd3 q3', d3_open: 'd3 open',
+    d4q1: 'd4 q1', d4q2: 'd4 q2', d4q3: 'd4 q3', d4_open: 'd4 open',
+    d5q1: 'd5 q1', d5q2: 'd5 q2', d5q3: 'd5 q3', d5_open: 'd5 open',
+    overall_rating:  'overall rating',
+    open_strengths:  'greatest strengths',
+    open_improve:    'start doing',
+    open_other:      'additional comments',
   };
   headers.forEach((h,i) => {
     if(!h) return;
@@ -543,9 +531,9 @@ function buildReport(name, rows, fieldMap, headers){
   // Meta from first row
   const first = rows[0];
   document.getElementById('r_name').textContent    = name;
-  document.getElementById('r_project').textContent = getField(first, fieldMap,'project_name') || '—';
+  document.getElementById('r_project').textContent = getField(first, fieldMap,'review_period') || '—';
   document.getElementById('r_dept').textContent    = getField(first, fieldMap,'department')    || '—';
-  document.getElementById('r_cycle').textContent   = getField(first, fieldMap,'cycle')         || '—';
+  document.getElementById('r_cycle').textContent   = getField(first, fieldMap,'known_duration') || '—';
   document.getElementById('r_count').textContent   = rows.length + ' response' + (rows.length>1?'s':'');
   document.getElementById('r_date').textContent    = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
 
